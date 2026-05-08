@@ -27,3 +27,19 @@
 - Python
 - BeautifulSoup
 - Jetson Nano
+
+---
+
+# 啟動方式
+
+## 建立虛擬環境
+python3 -m venv .venv
+
+## 啟動虛擬環境
+source .venv/bin/activate
+
+## 安裝 Flask
+pip install flask flask_sqlalchemy
+
+## 啟動網站
+python3 app.py
