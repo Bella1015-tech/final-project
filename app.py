@@ -1,14 +1,17 @@
+import random
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
-# 設定 SQLite 資料庫
+# ==========================================
+# 1. 資料庫設定 (SQLite)
+# ==========================================
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///wardrobe.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# 建立資料庫模型 (Model) - 衣服
+# 建立資料庫模型 - 衣服
 class Clothing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False) 
@@ -16,64 +19,83 @@ class Clothing(db.Model):
     color = db.Column(db.String(20), nullable=True)  
     image_url = db.Column(db.String(300), nullable=True) 
 
-# 建立資料庫與測試資料
+# 修改 app.py 裡的初始化區塊
 with app.app_context():
     db.create_all()
-    if not Clothing.query.first():
-        sample_clothes = [
-            Clothing(name="日系純棉白 T 恤", category="上衣", color="白色"),
-            Clothing(name="直筒牛仔長褲", category="褲子", color="藍色"),
-            Clothing(name="工裝多口袋背心", category="外套", color="軍綠色"),
-            Clothing(name="極簡風黑襯衫", category="上衣", color="黑色"),
-            Clothing(name="百搭卡其寬褲", category="褲子", color="卡其色")
-        ]
-        db.session.add_all(sample_clothes)
-        db.session.commit()
+    # if not Clothing.query.first():
+    #     sample_clothes = [
+    #         # 這裡幫初始衣服補上網址
+    #         Clothing(name="日系極簡藍 T 恤", category="上衣", color="藍色", image_url="https://www.uniqlo.com/tw/hmall/test/u0000000052833/main/first/561/1.jpg"),
+    #         Clothing(name="重磅極致黑 T 恤", category="上衣", color="黑色", image_url="https://www.uniqlo.com/tw/hmall/test/u0000000045533/main/first/561/1.jpg")
+    #     ]
+    #     db.session.add_all(sample_clothes)
+    #     db.session.commit()
 
 # ==========================================
-# 這裡開始是 API 路由 (也就是大腦接收指令的神經)
+# 2. 網頁路由 (給人看的介面)
 # ==========================================
 
-# 【R】讀取 (Read) - 首頁網頁 (呈現畫面用)
+# 【R】讀取 - 首頁 (包含穿搭推薦)
 @app.route('/')
 def home():
-    # 從資料庫撈出所有衣服
     clothes = Clothing.query.all()
-    # 把衣服資料傳給 show.html
-    return render_template('show.html', items=clothes)
+    
+    # 穿搭推薦邏輯
+    tops = Clothing.query.filter_by(category='上衣').all()
+    bottoms = Clothing.query.filter_by(category='褲子').all()
+    
+    recommended_top = random.choice(tops) if tops else None
+    recommended_bottom = random.choice(bottoms) if bottoms else None
 
-# 【C】新增 (Create) - 接收網頁表單傳來的資料並存入資料庫
-@app.route('/add', methods=['POST'])
-def add_clothing():
-    new_name = request.form.get('name')
-    new_category = request.form.get('category')
-    new_color = request.form.get('color')
-    new_image_url = request.form.get('image_url')
-
-    new_item = Clothing(
-        name=new_name, 
-        category=new_category, 
-        color=new_color, 
-        image_url=new_image_url
+    return render_template(
+        'show.html', 
+        items=clothes,
+        rec_top=recommended_top,
+        rec_bottom=recommended_bottom
     )
-    
-    db.session.add(new_item)
-    db.session.commit()
-    
-    return redirect(url_for('home'))
 
-# 【D】刪除 (Delete) - 根據衣服的 ID 把它從資料庫刪掉
+# 【D】刪除 - 移除衣服
 @app.route('/delete/<int:id>', methods=['POST'])
 def delete_clothing(id):
     item_to_delete = Clothing.query.get_or_404(id)
-    
     db.session.delete(item_to_delete)
     db.session.commit()
-    
     return redirect(url_for('home'))
 
 # ==========================================
-# 啟動馬達 (超級重要，這決定伺服器會不會跑起來)
+# 3. API 路由 (給機器人 Jetson Nano 傳資料用的)
+# ==========================================
+
+# 【C】新增 - 接收硬體端傳來的 JSON 資料
+@app.route('/api/add_clothes', methods=['POST'])
+def api_add_clothes():
+    # 1. 接收 Nano 傳過來的資料
+    data = request.get_json()
+    
+    # 2. 安全檢查
+    if not data or 'name' not in data or 'category' not in data:
+        return jsonify({'error': '缺少必要的衣服資料'}), 400
+    
+    # 3. 建立並存入資料庫
+    new_cloth = Clothing(
+        name=data['name'],
+        category=data['category'],
+        color=data.get('color', '未分類'),
+        image_url=data.get('image_url', '')
+    )
+    
+    db.session.add(new_cloth)
+    db.session.commit()
+    
+    # 4. 回傳成功訊息給硬體
+    return jsonify({
+        'status': 'success',
+        'message': f"成功將 {data['name']} 加入衣櫥！",
+        'id': new_cloth.id
+    }), 201
+
+# ==========================================
+# 4. 啟動伺服器
 # ==========================================
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
