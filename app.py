@@ -26,10 +26,7 @@ class Clothing(db.Model):
     color = db.Column(db.String(20), nullable=True)  
     image_url = db.Column(db.String(300), nullable=True) 
 
-# 修改 app.py 裡的初始化區塊
-with app.app_context():
-    db.create_all()
-    # 資料庫初始化
+# 資料庫初始化
 with app.app_context():
     db.create_all()
     
