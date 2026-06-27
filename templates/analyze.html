@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>體型分析 - 智慧極簡衣櫥</title>
+<style>
+body { font-family: "Helvetica", sans-serif; background: #f4f6f8; margin: 0; }
+.header { background: #222; color: white; padding: 20px; text-align: center; }
+.header a { color: #ccc; text-decoration: none; font-size: 14px; }
+.container { max-width: 700px; margin: 40px auto; padding: 20px; }
+.card { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+input[type=number] { padding: 10px; width: 100%; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+button { background: #222; color: white; padding: 12px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; }
+.result-type { font-size: 36px; font-weight: bold; text-align: center; margin: 10px 0; color: #222; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.tag { background: #f0f0f0; padding: 6px 14px; border-radius: 20px; font-size: 14px; }
+.tag.avoid { background: #ffe0e0; color: #c00; }
+.label { font-weight: bold; margin-top: 16px; margin-bottom: 6px; color: #444; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>📐 體型分析</h1>
+    <a href="/">← 回到衣櫥</a>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h3>輸入你的三圍（單位：公分）</h3>
+        <form method="POST">
+            <label>胸圍</label>
+            <input type="number" name="bust" placeholder="例如：88" step="0.1" required>
+            <label>腰圍</label>
+            <input type="number" name="waist" placeholder="例如：68" step="0.1" required>
+            <label>臀圍</label>
+            <input type="number" name="hip" placeholder="例如：92" step="0.1" required>
+            <button>開始分析 →</button>
+        </form>
+    </div>
+
+    {% if result %}
+        {% if result.error %}
+            <div class="card">
+                <p style="color:red">{{ result.error }}</p>
+            </div>
+        {% else %}
+            <div class="card">
+                <p style="text-align:center; color:#888">你的體型是</p>
+                <div class="result-type">{{ result.body_type }}</div>
+                <p style="text-align:center; color:#888">胸 {{ result.bust }} cm｜腰 {{ result.waist }} cm｜臀 {{ result.hip }} cm</p>
+                
+                <div class="label">✨ 優點</div>
+                <p>{{ result.advice.優點 }}</p>
+                
+                <div class="label">👗 推薦穿搭</div>
+                <div class="tag-list">
+                    {% for item in result.advice.建議 %}
+                    <span class="tag">{{ item }}</span>
+                    {% endfor %}
+                </div>
+                
+                <div class="label">❌ 建議避免</div>
+                <div class="tag-list">
+                    {% for item in result.advice.避免 %}
+                    <span class="tag avoid">{{ item }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+
+</body>
+</html>

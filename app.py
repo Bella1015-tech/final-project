@@ -7,7 +7,14 @@ app = Flask(__name__)
 # ==========================================
 # 1. 資料庫設定 (SQLite)
 # ==========================================
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///wardrobe.db'
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///wardrobe.db')
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -93,6 +100,78 @@ def api_add_clothes():
         'message': f"成功將 {data['name']} 加入衣櫥！",
         'id': new_cloth.id
     }), 201
+
+# ==========================================
+# 3.5 體型分析路由
+# ==========================================
+
+def classify_body_type(bust, waist, hip):
+    """根據三圍數據分類體型"""
+    waist_hip_ratio = waist / hip
+    bust_hip_diff = abs(bust - hip)
+    
+    if waist_hip_ratio < 0.75 and bust_hip_diff <= 5:
+        return "沙漏型", "hourglass"
+    elif hip > bust and waist_hip_ratio < 0.75:
+        return "梨型", "pear"
+    elif waist >= hip or (waist / bust) > 0.8:
+        return "蘋果型", "apple"
+    elif bust > hip + 3:
+        return "倒三角型", "inverted_triangle"
+    else:
+        return "矩形", "rectangle"
+
+STYLE_ADVICE = {
+    "hourglass": {
+        "優點": "腰線明顯，上下比例均衡",
+        "建議": ["合身洋裝", "高腰裙", "V領上衣", "貼身針織"],
+        "避免": ["寬鬆直筒版型", "過於蓬鬆的外套"]
+    },
+    "pear": {
+        "優點": "臀部豐滿有曲線",
+        "建議": ["A字裙", "深色下身", "亮色上衣", "船領/寬肩設計"],
+        "避免": ["緊身褲", "低腰設計", "橫條紋下身"]
+    },
+    "apple": {
+        "優點": "上半身豐滿、腿部修長",
+        "建議": ["V領拉長頸部", "Empire腰線洋裝", "直筒長褲", "開襟外套"],
+        "避免": ["高領", "緊身腰部設計", "腰帶強調"]
+    },
+    "inverted_triangle": {
+        "優點": "肩膀寬闊有氣場",
+        "建議": ["A字裙", "蓬裙", "細肩帶", "低領設計"],
+        "避免": ["墊肩", "船領", "橫條紋上身"]
+    },
+    "rectangle": {
+        "優點": "身材均勻、好搭配",
+        "建議": ["腰帶創造腰線", "荷葉邊", "層次穿搭", "Peplum上衣"],
+        "避免": ["完全直筒版型"]
+    }
+}
+
+@app.route('/analyze', methods=['GET', 'POST'])
+def analyze():
+    result = None
+    if request.method == 'POST':
+        try:
+            bust = float(request.form['bust'])
+            waist = float(request.form['waist'])
+            hip = float(request.form['hip'])
+            
+            body_type_zh, body_type_key = classify_body_type(bust, waist, hip)
+            advice = STYLE_ADVICE[body_type_key]
+            
+            result = {
+                'body_type': body_type_zh,
+                'bust': bust,
+                'waist': waist,
+                'hip': hip,
+                'advice': advice
+            }
+        except (ValueError, ZeroDivisionError):
+            result = {'error': '請輸入有效的數字'}
+    
+    return render_template('analyze.html', result=result)
 
 # ==========================================
 # 4. 啟動伺服器
