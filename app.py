@@ -29,14 +29,62 @@ class Clothing(db.Model):
 # 修改 app.py 裡的初始化區塊
 with app.app_context():
     db.create_all()
-    # if not Clothing.query.first():
-    #     sample_clothes = [
-    #         # 這裡幫初始衣服補上網址
-    #         Clothing(name="日系極簡藍 T 恤", category="上衣", color="藍色", image_url="https://www.uniqlo.com/tw/hmall/test/u0000000052833/main/first/561/1.jpg"),
-    #         Clothing(name="重磅極致黑 T 恤", category="上衣", color="黑色", image_url="https://www.uniqlo.com/tw/hmall/test/u0000000045533/main/first/561/1.jpg")
-    #     ]
-    #     db.session.add_all(sample_clothes)
-    #     db.session.commit()
+    # 資料庫初始化
+with app.app_context():
+    db.create_all()
+    
+    # 首次部署時自動爬蟲
+    if Clothing.query.count() == 0:
+        print("🕷️ 首次部署，自動填充資料...")
+        import requests
+        
+        CATEGORIES = [
+            ('womens-dresses', '洋裝'),
+            ('tops', '上衣'),
+            ('womens-shoes', '鞋子'),
+            ('mens-shirts', '襯衫'),
+            ('womens-bags', '包包'),
+            ('womens-jewellery', '飾品'),
+            ('sunglasses', '太陽眼鏡'),
+            ('womens-watches', '手錶'),
+        ]
+        
+        total_added = 0
+        for api_category, display_category in CATEGORIES:
+            url = f"https://dummyjson.com/products/category/{api_category}"
+            response = requests.get(url)
+            
+            if response.status_code == 200:
+                products = response.json()['products']
+                for item in products:
+                    new_clothes = Clothing(
+                        name=item['title'],
+                        category=display_category,
+                        color='未分類',
+                        image_url=item['images'][0] if item.get('images') else ''
+                    )
+                    db.session.add(new_clothes)
+                    total_added += 1
+        
+        # 手動新增褲子
+        MANUAL_ITEMS = [
+            {'name': '黑色緊身褲', 'category': '褲子', 'image_url': 'https://images.unsplash.com/photo-1542272604-787c62d465d1?w=400'},
+            {'name': '淺藍牛仔褲', 'category': '褲子', 'image_url': 'https://images.unsplash.com/photo-1542272604-787c62d465d1?w=400'},
+            {'name': '米白色寬褲', 'category': '褲子', 'image_url': 'https://images.unsplash.com/photo-1552062407-291826de9e82?w=400'},
+        ]
+        
+        for item in MANUAL_ITEMS:
+            new_clothes = Clothing(
+                name=item['name'],
+                category=item['category'],
+                color='未分類',
+                image_url=item['image_url']
+            )
+            db.session.add(new_clothes)
+            total_added += 1
+        
+        db.session.commit()
+        print(f"✅ 自動填充完成，新增 {total_added} 件衣服")
 
 # ==========================================
 # 2. 網頁路由 (給人看的介面)
