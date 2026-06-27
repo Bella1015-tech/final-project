@@ -7,7 +7,11 @@ app = Flask(__name__)
 # ==========================================
 # 1. 資料庫設定 (SQLite)
 # ==========================================
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///wardrobe.db'
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///wardrobe.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
