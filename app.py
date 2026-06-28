@@ -1,8 +1,10 @@
+
 import random
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB 限制
 
 # ==========================================
 # 1. 資料庫設定 (SQLite)
@@ -113,6 +115,28 @@ def home():
 def delete_clothing(id):
     item_to_delete = Clothing.query.get_or_404(id)
     db.session.delete(item_to_delete)
+    db.session.commit()
+    return redirect(url_for('home'))
+
+# 【C】新增 - 網頁表單新增衣服
+@app.route('/add', methods=['POST'])
+def add_clothing():
+    name = request.form.get('name')
+    category = request.form.get('category')
+    color = request.form.get('color', '未分類')
+    image_url = request.form.get('image_url', '')
+    
+    if not name or not category:
+        return redirect(url_for('home'))
+    
+    new_clothes = Clothing(
+        name=name,
+        category=category,
+        color=color,
+        image_url=image_url
+    )
+    
+    db.session.add(new_clothes)
     db.session.commit()
     return redirect(url_for('home'))
 
