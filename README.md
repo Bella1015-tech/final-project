@@ -35,6 +35,9 @@ python app.py
 
 訪問 `http://localhost:5000`
 
+## 展示影片
+📹 [期末專題展示影片](https://drive.google.com/drive/folders/12mCtothlZEPGZyyo97sqAte9hVs1kal9?usp=drive_link)
+
 ## 小組分工
 - **傅香瑋**：前端設計、爬蟲開發、部署配置
 - **簡貝珊**：體型分類演算法、後端路由、資料庫設計
