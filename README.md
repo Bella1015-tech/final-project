@@ -19,4 +19,25 @@
 - 後端：Python Flask + SQLAlchemy ORM
 - 資料庫：PostgreSQL (Render)
 - 爬蟲：Python requests
-- 部署：Render +
+- 部署：Render + Gunicorn
+
+## 線上訪問
+🌐 **https://final-project-dmxc.onrender.com**
+
+## 本地運行
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python app.py
+```
+
+訪問 `http://localhost:5000`
+
+## 小組分工
+- **傅香瑋**：前端設計、爬蟲開發、部署配置
+- **簡貝珊**：體型分類演算法、後端路由、資料庫設計
+
+## GitHub
+https://github.com/Bella1015-tech/final-project
